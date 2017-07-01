@@ -87,9 +87,8 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
         yv = -1
         node = None
         for km in range(dmin - p, delta, 1):
-            t = fp[km + 1]
-            if yv < t[0]:
-                yv, node = t
+            if yv < fp[km + 1][0]:
+                yv, node = fp[km + 1]
             else:
                 yv += 1
             x = yv - km + middle
@@ -107,9 +106,8 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
         yh = -1
         node = None
         for km in range(dmax + p, delta, -1):
-            t = fp[km - 1]
-            if yh <= t[0]:
-                yh, node = t
+            if yh <= fp[km - 1][0]:
+                yh, node = fp[km - 1]
                 yh += 1
             x = yh - km + middle
             if x < m and yh < n and a[x] == b[yh]:
