@@ -67,6 +67,13 @@ DiffChunk = collections.namedtuple('DiffChunk',
                                    'tag, start_a, end_a, start_b, end_b')
 
 
+cdef struct Node:
+    Node* lastsnake
+    long x
+    long y
+    long snake
+
+
 @boundscheck(False)
 cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
 
