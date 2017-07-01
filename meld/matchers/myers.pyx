@@ -67,6 +67,84 @@ DiffChunk = collections.namedtuple('DiffChunk',
                                    'tag, start_a, end_a, start_b, end_b')
 
 
+@boundscheck(False)
+cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
+
+    cdef int middle = m + 1
+    cdef int delta = n - m + middle
+    cdef int dmin = min(middle, delta)
+    cdef int dmax = max(middle, delta)
+    cdef int p, yv, yh, x, y, snake, km
+
+    lastsnake = None
+
+    size = n + m + 2
+    fp = [(-1, None)] * size
+    p = -1
+    while True:
+        p += 1
+        # move along vertical edge
+        yv = -1
+        node = None
+        for km in range(dmin - p, delta, 1):
+            t = fp[km + 1]
+            if yv < t[0]:
+                yv, node = t
+            else:
+                yv += 1
+            x = yv - km + middle
+            if x < m and yv < n and a[x] == b[yv]:
+                snake = x
+                x += 1
+                yv += 1
+                while x < m and yv < n and a[x] == b[yv]:
+                    x += 1
+                    yv += 1
+                snake = x - snake
+                node = (node, x - snake, yv - snake, snake)
+            fp[km] = (yv, node)
+        # move along horizontal edge
+        yh = -1
+        node = None
+        for km in range(dmax + p, delta, -1):
+            t = fp[km - 1]
+            if yh <= t[0]:
+                yh, node = t
+                yh += 1
+            x = yh - km + middle
+            if x < m and yh < n and a[x] == b[yh]:
+                snake = x
+                x += 1
+                yh += 1
+                while x < m and yh < n and a[x] == b[yh]:
+                    x += 1
+                    yh += 1
+                snake = x - snake
+                node = (node, x - snake, yh - snake, snake)
+            fp[km] = (yh, node)
+        # point on the diagonal that leads to the sink
+        if yv < yh:
+            y, node = fp[delta + 1]
+        else:
+            y, node = fp[delta - 1]
+            y += 1
+        x = y - delta + middle
+        if x < m and y < n and a[x] == b[y]:
+            snake = x
+            x += 1
+            y += 1
+            while x < m and y < n and a[x] == b[y]:
+                x += 1
+                y += 1
+            snake = x - snake
+            node = (node, x - snake, y - snake, snake)
+        fp[delta] = (y, node)
+        if y >= n:
+            lastsnake = node
+            break
+
+    return lastsnake
+
 class MyersSequenceMatcher(difflib.SequenceMatcher):
 
     def __init__(self, isjunk=None, a="", b=""):
@@ -269,77 +347,11 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
 
         cdef int m = len(a)
         cdef int n = len(b)
-        cdef int middle = m + 1
         lastsnake = None
-        cdef int delta = n - m + middle
-        cdef int dmin = min(middle, delta)
-        cdef int dmax = max(middle, delta)
-        cdef int p, yv, yh, x, y, snake, km
+
         if n > 0 and m > 0:
-            size = n + m + 2
-            fp = [(-1, None)] * size
-            p = -1
-            while True:
-                p += 1
-                # move along vertical edge
-                yv = -1
-                node = None
-                for km in range(dmin - p, delta, 1):
-                    t = fp[km + 1]
-                    if yv < t[0]:
-                        yv, node = t
-                    else:
-                        yv += 1
-                    x = yv - km + middle
-                    if x < m and yv < n and a[x] == b[yv]:
-                        snake = x
-                        x += 1
-                        yv += 1
-                        while x < m and yv < n and a[x] == b[yv]:
-                            x += 1
-                            yv += 1
-                        snake = x - snake
-                        node = (node, x - snake, yv - snake, snake)
-                    fp[km] = (yv, node)
-                # move along horizontal edge
-                yh = -1
-                node = None
-                for km in range(dmax + p, delta, -1):
-                    t = fp[km - 1]
-                    if yh <= t[0]:
-                        yh, node = t
-                        yh += 1
-                    x = yh - km + middle
-                    if x < m and yh < n and a[x] == b[yh]:
-                        snake = x
-                        x += 1
-                        yh += 1
-                        while x < m and yh < n and a[x] == b[yh]:
-                            x += 1
-                            yh += 1
-                        snake = x - snake
-                        node = (node, x - snake, yh - snake, snake)
-                    fp[km] = (yh, node)
-                # point on the diagonal that leads to the sink
-                if yv < yh:
-                    y, node = fp[delta + 1]
-                else:
-                    y, node = fp[delta - 1]
-                    y += 1
-                x = y - delta + middle
-                if x < m and y < n and a[x] == b[y]:
-                    snake = x
-                    x += 1
-                    y += 1
-                    while x < m and y < n and a[x] == b[y]:
-                        x += 1
-                        y += 1
-                    snake = x - snake
-                    node = (node, x - snake, y - snake, snake)
-                fp[delta] = (y, node)
-                if y >= n:
-                    lastsnake = node
-                    break
+            lastsnake = find_snakes(a, b, m, n)
+
         self.build_matching_blocks(lastsnake)
         self.postprocess()
         yield 1
