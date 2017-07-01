@@ -17,6 +17,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from cpython cimport array
+from cython cimport cdivision, boundscheck
+
+import array
 import collections
 import difflib
 
@@ -248,6 +252,7 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
         # clean-up to free memory
         self.aindex = self.bindex = None
 
+    @boundscheck(False)
     def initialise(self):
         """
         Optimized implementation of the O(NP) algorithm described by Sun Wu,
@@ -256,7 +261,11 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
         http://research.janelia.org/myers/Papers/np_diff.pdf
         """
 
-        a, b = self.preprocess()
+        cdef array.array py_a, py_b
+        py_a, py_b = self.preprocess()
+
+        cdef unsigned long[:] a = py_a
+        cdef unsigned long[:] b = py_b
 
         cdef int m = len(a)
         cdef int n = len(b)
