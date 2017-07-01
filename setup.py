@@ -4,6 +4,8 @@ from distutils.core import setup
 import glob
 import sys
 
+from Cython.Build import cythonize
+
 import meld.build_helpers
 import meld.conf
 
@@ -42,6 +44,7 @@ setup(
         'meld': ['README', 'COPYING', 'NEWS'],
         'meld.vc': ['README', 'COPYING'],
     },
+    ext_modules=cythonize('meld/matchers/myers.pyx'),
     scripts=['bin/meld'],
     data_files=[
         ('share/man/man1',
