@@ -75,19 +75,23 @@ cdef struct Node:
 
 
 @boundscheck(False)
-cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
+cdef find_snakes(
+        unsigned long[:] a,
+        unsigned long[:] b,
+        const int LEN_A,
+        const int LEN_B):
 
-    cdef long middle = m + 1
-    cdef long delta = n - m + middle
+    cdef long middle = LEN_A + 1
+    cdef long delta = LEN_B - LEN_A + middle
     cdef long dmin = min(middle, delta)
     cdef long dmax = max(middle, delta)
     cdef long p, yv, yh, x, y, snake, km
 
     lastsnake = None
 
-    size = n + m + 2
-    cdef long[:] fp_int = array.array('l', [-1] * size)
-    fp_prevnode = [None] * size
+    cdef long max_len = LEN_B + LEN_A + 2
+    cdef long[:] fp_int = array.array('l', [-1] * max_len)
+    fp_prevnode = [None] * max_len
     p = -1
     while True:
         p += 1
@@ -101,11 +105,11 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
             else:
                 yv += 1
             x = yv - km + middle
-            if x < m and yv < n and a[x] == b[yv]:
+            if x < LEN_A and yv < LEN_B and a[x] == b[yv]:
                 snake = x
                 x += 1
                 yv += 1
-                while x < m and yv < n and a[x] == b[yv]:
+                while x < LEN_A and yv < LEN_B and a[x] == b[yv]:
                     x += 1
                     yv += 1
                 snake = x - snake
@@ -122,11 +126,11 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
                 node = fp_prevnode[km - 1]
                 yh += 1
             x = yh - km + middle
-            if x < m and yh < n and a[x] == b[yh]:
+            if x < LEN_A and yh < LEN_B and a[x] == b[yh]:
                 snake = x
                 x += 1
                 yh += 1
-                while x < m and yh < n and a[x] == b[yh]:
+                while x < LEN_A and yh < LEN_B and a[x] == b[yh]:
                     x += 1
                     yh += 1
                 snake = x - snake
@@ -143,11 +147,11 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
             node = fp_prevnode[delta - 1]
             y += 1
         x = y - delta + middle
-        if x < m and y < n and a[x] == b[y]:
+        if x < LEN_A and y < LEN_B and a[x] == b[y]:
             snake = x
             x += 1
             y += 1
-            while x < m and y < n and a[x] == b[y]:
+            while x < LEN_A and y < LEN_B and a[x] == b[y]:
                 x += 1
                 y += 1
             snake = x - snake
@@ -155,7 +159,7 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
         fp_int[delta] = y
         fp_prevnode[delta] = node
 
-        if y >= n:
+        if y >= LEN_B:
             lastsnake = node
             break
 
