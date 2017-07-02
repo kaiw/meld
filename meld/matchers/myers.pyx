@@ -86,7 +86,8 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
     lastsnake = None
 
     size = n + m + 2
-    fp = [(-1, None)] * size
+    cdef long[:] fp_int = array.array('l', [-1] * size)
+    fp_prevnode = [None] * size
     p = -1
     while True:
         p += 1
@@ -94,8 +95,9 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
         yv = -1
         node = None
         for km in range(dmin - p, delta, 1):
-            if yv < fp[km + 1][0]:
-                yv, node = fp[km + 1]
+            if yv < fp_int[km + 1]:
+                yv = fp_int[km + 1]
+                node = fp_prevnode[km + 1]
             else:
                 yv += 1
             x = yv - km + middle
@@ -108,13 +110,16 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
                     yv += 1
                 snake = x - snake
                 node = (node, x - snake, yv - snake, snake)
-            fp[km] = (yv, node)
+            fp_int[km] = yv
+            fp_prevnode[km] = node
+
         # move along horizontal edge
         yh = -1
         node = None
         for km in range(dmax + p, delta, -1):
-            if yh <= fp[km - 1][0]:
-                yh, node = fp[km - 1]
+            if yh <= fp_int[km - 1]:
+                yh = fp_int[km - 1]
+                node = fp_prevnode[km - 1]
                 yh += 1
             x = yh - km + middle
             if x < m and yh < n and a[x] == b[yh]:
@@ -126,12 +131,16 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
                     yh += 1
                 snake = x - snake
                 node = (node, x - snake, yh - snake, snake)
-            fp[km] = (yh, node)
+            fp_int[km] = yh
+            fp_prevnode[km] = node
+
         # point on the diagonal that leads to the sink
         if yv < yh:
-            y, node = fp[delta + 1]
+            y = fp_int[delta + 1]
+            node = fp_prevnode[delta + 1]
         else:
-            y, node = fp[delta - 1]
+            y = fp_int[delta - 1]
+            node = fp_prevnode[delta - 1]
             y += 1
         x = y - delta + middle
         if x < m and y < n and a[x] == b[y]:
@@ -143,7 +152,9 @@ cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
                 y += 1
             snake = x - snake
             node = (node, x - snake, y - snake, snake)
-        fp[delta] = (y, node)
+        fp_int[delta] = y
+        fp_prevnode[delta] = node
+
         if y >= n:
             lastsnake = node
             break
