@@ -77,11 +77,11 @@ cdef struct Node:
 @boundscheck(False)
 cdef find_snakes(unsigned long[:] a, unsigned long[:] b, int m, int n):
 
-    cdef int middle = m + 1
-    cdef int delta = n - m + middle
-    cdef int dmin = min(middle, delta)
-    cdef int dmax = max(middle, delta)
-    cdef int p, yv, yh, x, y, snake, km
+    cdef long middle = m + 1
+    cdef long delta = n - m + middle
+    cdef long dmin = min(middle, delta)
+    cdef long dmax = max(middle, delta)
+    cdef long p, yv, yh, x, y, snake, km
 
     lastsnake = None
 
