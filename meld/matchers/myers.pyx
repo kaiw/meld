@@ -75,6 +75,30 @@ cdef struct Node:
 
 
 @boundscheck(False)
+cdef handle_diagonal(
+        unsigned long[:] a,
+        unsigned long[:] b,
+        const int LEN_A,
+        const int LEN_B,
+        long *yv,
+        const int km):
+
+    cdef long middle = LEN_A + 1
+    cdef long x, snake
+
+    x = yv[0] - km + middle
+    if x < LEN_A and yv[0] < LEN_B and a[x] == b[yv[0]]:
+        snake = x
+        x += 1
+        yv[0] += 1
+        while x < LEN_A and yv[0] < LEN_B and a[x] == b[yv[0]]:
+            x += 1
+            yv[0] += 1
+        snake = x - snake
+        return (x - snake, yv[0] - snake, snake)
+
+
+@boundscheck(False)
 cdef find_snakes(
         unsigned long[:] a,
         unsigned long[:] b,
@@ -104,16 +128,10 @@ cdef find_snakes(
                 node = fp_prevnode[km + 1]
             else:
                 yv += 1
-            x = yv - km + middle
-            if x < LEN_A and yv < LEN_B and a[x] == b[yv]:
-                snake = x
-                x += 1
-                yv += 1
-                while x < LEN_A and yv < LEN_B and a[x] == b[yv]:
-                    x += 1
-                    yv += 1
-                snake = x - snake
-                node = (node, x - snake, yv - snake, snake)
+
+            resp = handle_diagonal(a, b, LEN_A, LEN_B, &yv, km)
+            if resp:
+                node = (node, resp[0], resp[1], resp[2])
             fp_int[km] = yv
             fp_prevnode[km] = node
 
@@ -125,16 +143,10 @@ cdef find_snakes(
                 yh = fp_int[km - 1]
                 node = fp_prevnode[km - 1]
                 yh += 1
-            x = yh - km + middle
-            if x < LEN_A and yh < LEN_B and a[x] == b[yh]:
-                snake = x
-                x += 1
-                yh += 1
-                while x < LEN_A and yh < LEN_B and a[x] == b[yh]:
-                    x += 1
-                    yh += 1
-                snake = x - snake
-                node = (node, x - snake, yh - snake, snake)
+
+            resp = handle_diagonal(a, b, LEN_A, LEN_B, &yh, km)
+            if resp:
+                node = (node, resp[0], resp[1], resp[2])
             fp_int[km] = yh
             fp_prevnode[km] = node
 
@@ -146,16 +158,10 @@ cdef find_snakes(
             y = fp_int[delta - 1]
             node = fp_prevnode[delta - 1]
             y += 1
-        x = y - delta + middle
-        if x < LEN_A and y < LEN_B and a[x] == b[y]:
-            snake = x
-            x += 1
-            y += 1
-            while x < LEN_A and y < LEN_B and a[x] == b[y]:
-                x += 1
-                y += 1
-            snake = x - snake
-            node = (node, x - snake, y - snake, snake)
+
+        resp = handle_diagonal(a, b, LEN_A, LEN_B, &y, delta)
+        if resp:
+            node = (node, resp[0], resp[1], resp[2])
         fp_int[delta] = y
         fp_prevnode[delta] = node
 
