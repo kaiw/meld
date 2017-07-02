@@ -19,6 +19,7 @@
 
 from cpython cimport array
 from cython cimport cdivision, boundscheck
+from libc.stdlib cimport malloc, free
 
 import array
 import collections
@@ -75,13 +76,14 @@ cdef struct Node:
 
 
 @boundscheck(False)
-cdef handle_diagonal(
+cdef void handle_diagonal(
         unsigned long[:] a,
         unsigned long[:] b,
         const int LEN_A,
         const int LEN_B,
+        const int km,
         long *yv,
-        const int km):
+        Node **node):
 
     cdef long middle = LEN_A + 1
     cdef long x, snake
@@ -95,7 +97,10 @@ cdef handle_diagonal(
             x += 1
             yv[0] += 1
         snake = x - snake
-        return (x - snake, yv[0] - snake, snake)
+
+        newnode = <Node*>malloc(sizeof(Node))
+        newnode[0] = Node(node[0], x - snake, yv[0] - snake, snake)
+        node[0] = newnode
 
 
 @boundscheck(False)
@@ -111,42 +116,43 @@ cdef find_snakes(
     cdef long dmax = max(middle, delta)
     cdef long p, yv, yh, x, y, snake, km
 
-    lastsnake = None
-
     cdef long max_len = LEN_B + LEN_A + 2
     cdef long[:] fp_int = array.array('l', [-1] * max_len)
-    fp_prevnode = [None] * max_len
+
+    # TODO: zero it out
+    cdef Node** fp_prevnode = <Node**>malloc(sizeof(Node*) * max_len)
+    cdef Node* node
+    cdef Node* lastsnake = NULL
+
     p = -1
     while True:
         p += 1
         # move along vertical edge
         yv = -1
-        node = None
+        node = NULL
         for km in range(dmin - p, delta, 1):
+            # print(km)
             if yv < fp_int[km + 1]:
                 yv = fp_int[km + 1]
                 node = fp_prevnode[km + 1]
             else:
                 yv += 1
 
-            resp = handle_diagonal(a, b, LEN_A, LEN_B, &yv, km)
-            if resp:
-                node = (node, resp[0], resp[1], resp[2])
+            handle_diagonal(a, b, LEN_A, LEN_B, km, &yv, &node)
             fp_int[km] = yv
             fp_prevnode[km] = node
 
         # move along horizontal edge
         yh = -1
-        node = None
+        node = NULL
         for km in range(dmax + p, delta, -1):
+            # print(km)
             if yh <= fp_int[km - 1]:
                 yh = fp_int[km - 1]
                 node = fp_prevnode[km - 1]
                 yh += 1
 
-            resp = handle_diagonal(a, b, LEN_A, LEN_B, &yh, km)
-            if resp:
-                node = (node, resp[0], resp[1], resp[2])
+            handle_diagonal(a, b, LEN_A, LEN_B, km, &yh, &node)
             fp_int[km] = yh
             fp_prevnode[km] = node
 
@@ -159,9 +165,8 @@ cdef find_snakes(
             node = fp_prevnode[delta - 1]
             y += 1
 
-        resp = handle_diagonal(a, b, LEN_A, LEN_B, &y, delta)
-        if resp:
-            node = (node, resp[0], resp[1], resp[2])
+        handle_diagonal(a, b, LEN_A, LEN_B, delta, &y, &node)
+
         fp_int[delta] = y
         fp_prevnode[delta] = node
 
@@ -169,7 +174,18 @@ cdef find_snakes(
             lastsnake = node
             break
 
-    return lastsnake
+    newsnake = []
+    cdef long snake_x, snake_y, snake_snake
+
+    while lastsnake != NULL:
+        snake_x = lastsnake.x
+        snake_y = lastsnake.y
+        snake_snake = lastsnake.snake
+        lastsnake = lastsnake.lastsnake
+        newsnake.append((snake_x, snake_y, snake_snake))
+
+    return None
+
 
 class MyersSequenceMatcher(difflib.SequenceMatcher):
 
