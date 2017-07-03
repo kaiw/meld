@@ -21,7 +21,8 @@ import collections
 import difflib
 
 
-def find_common_prefix(a, b):
+cdef find_common_prefix(a, b):
+    cdef int pointermax, pointermid, pointermin
     if not a or not b:
         return 0
     if a[0] == b[0]:
@@ -38,7 +39,8 @@ def find_common_prefix(a, b):
     return 0
 
 
-def find_common_suffix(a, b):
+cdef find_common_suffix(a, b):
+    cdef int pointermax, pointermid, pointermin
     if not a or not b:
         return 0
     if a[-1] == b[-1]:
@@ -231,13 +233,15 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
         """
 
         a, b = self.preprocess()
-        m = len(a)
-        n = len(b)
-        middle = m + 1
+
+        cdef int m = len(a)
+        cdef int n = len(b)
+        cdef int middle = m + 1
         lastsnake = None
-        delta = n - m + middle
-        dmin = min(middle, delta)
-        dmax = max(middle, delta)
+        cdef int delta = n - m + middle
+        cdef int dmin = min(middle, delta)
+        cdef int dmax = max(middle, delta)
+        cdef int p, yv, yh, x, y, snake, km
         if n > 0 and m > 0:
             size = n + m + 2
             fp = [(-1, None)] * size
