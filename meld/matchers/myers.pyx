@@ -83,10 +83,11 @@ cdef void handle_diagonal(
         const int LEN_B,
         const int km,
         long *yv,
-        Node **node):
+        Node **node) nogil:
 
     cdef long middle = LEN_A + 1
     cdef long x, snake
+    cdef Node* newnode
 
     x = yv[0] - km + middle
     if x < LEN_A and yv[0] < LEN_B and a[x] == b[yv[0]]:
@@ -99,7 +100,12 @@ cdef void handle_diagonal(
         snake = x - snake
 
         newnode = <Node*>malloc(sizeof(Node))
-        newnode[0] = Node(node[0], x - snake, yv[0] - snake, snake)
+        # Ugly struct initialisation syntax; otherwise we hit GIL
+        # issues (see https://github.com/cython/cython/issues/1642)
+        newnode.lastsnake = node[0]
+        newnode.x = x - snake
+        newnode.y = yv[0] - snake
+        newnode.snake = snake
         node[0] = newnode
 
 
