@@ -135,14 +135,38 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
             b = indexed_b
         return (a, b)
 
+    def preprocess_arrayify(self, a, b):
+        """Map string and line sequences to an array of longs
+
+        Because we don't care about the content of lines at this point,
+        this is a valid transformation that allows us to reduce the
+        sequence comparison to an array comparison, for significant
+        speed improvements.
+        """
+        if isinstance(a, str) and isinstance(b, str):
+            a = array.array('L', (ord(character) for character in a))
+            b = array.array('L', (ord(character) for character in b))
+            return a, b
+
+        unique_lines = set(a) | set(b)
+        self.linealiases = {
+            line: i for i, line in enumerate(unique_lines)
+        }
+        a = array.array('L', (self.linealiases[line] for line in a))
+        b = array.array('L', (self.linealiases[line] for line in b))
+        return a, b
+
     def preprocess(self):
         """
         Pre-processing optimizations:
         1) remove common prefix and common suffix
         2) remove lines that do not match
+        3) translate all unique lines to a single integer
         """
         a, b = self.preprocess_remove_prefix_suffix(self.a, self.b)
-        return self.preprocess_discard_nonmatching_lines(a, b)
+        a, b = self.preprocess_discard_nonmatching_lines(a, b)
+        a, b = self.preprocess_arrayify(a, b)
+        return a, b
 
     def postprocess(self):
         """
