@@ -19,7 +19,7 @@
 
 from cpython cimport array
 from cython cimport cdivision, boundscheck
-from libc.stdlib cimport malloc, free
+from libc.stdlib cimport calloc, malloc, free
 
 import array
 import collections
@@ -125,8 +125,7 @@ cdef find_snakes(
     cdef long max_len = LEN_B + LEN_A + 2
     cdef long[:] fp_int = array.array('l', [-1] * max_len)
 
-    # TODO: zero it out
-    cdef Node** fp_prevnode = <Node**>malloc(sizeof(Node*) * max_len)
+    cdef Node** fp_prevnode = <Node**>calloc(max_len, sizeof(Node*))
     cdef Node* node
     cdef Node* lastsnake = NULL
 
