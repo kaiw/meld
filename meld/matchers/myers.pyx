@@ -248,8 +248,6 @@ class MyersSequenceMatcher(difflib.SequenceMatcher):
             p = -1
             while True:
                 p += 1
-                if not p % 100:
-                    yield None
                 # move along vertical edge
                 yv = -1
                 node = None
