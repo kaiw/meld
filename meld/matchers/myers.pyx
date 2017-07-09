@@ -131,54 +131,53 @@ cdef find_snakes(
     cdef Node* lastsnake = NULL
 
     p = -1
-    while True:
-        p += 1
-        # move along vertical edge
-        yv = -1
-        node = NULL
-        for km in range(dmin - p, delta, 1):
-            # print(km)
-            if yv < fp_int[km + 1]:
-                yv = fp_int[km + 1]
-                node = fp_prevnode[km + 1]
+    with nogil:
+        while True:
+            p += 1
+            # move along vertical edge
+            yv = -1
+            node = NULL
+            for km in range(dmin - p, delta, 1):
+                if yv < fp_int[km + 1]:
+                    yv = fp_int[km + 1]
+                    node = fp_prevnode[km + 1]
+                else:
+                    yv += 1
+
+                handle_diagonal(a, b, LEN_A, LEN_B, km, &yv, &node)
+                fp_int[km] = yv
+                fp_prevnode[km] = node
+
+            # move along horizontal edge
+            yh = -1
+            node = NULL
+            for km in range(dmax + p, delta, -1):
+                if yh <= fp_int[km - 1]:
+                    yh = fp_int[km - 1]
+                    node = fp_prevnode[km - 1]
+                    yh += 1
+
+                handle_diagonal(a, b, LEN_A, LEN_B, km, &yh, &node)
+                fp_int[km] = yh
+                fp_prevnode[km] = node
+
+            # point on the diagonal that leads to the sink
+            if yv < yh:
+                y = fp_int[delta + 1]
+                node = fp_prevnode[delta + 1]
             else:
-                yv += 1
+                y = fp_int[delta - 1]
+                node = fp_prevnode[delta - 1]
+                y += 1
 
-            handle_diagonal(a, b, LEN_A, LEN_B, km, &yv, &node)
-            fp_int[km] = yv
-            fp_prevnode[km] = node
+            handle_diagonal(a, b, LEN_A, LEN_B, delta, &y, &node)
 
-        # move along horizontal edge
-        yh = -1
-        node = NULL
-        for km in range(dmax + p, delta, -1):
-            # print(km)
-            if yh <= fp_int[km - 1]:
-                yh = fp_int[km - 1]
-                node = fp_prevnode[km - 1]
-                yh += 1
+            fp_int[delta] = y
+            fp_prevnode[delta] = node
 
-            handle_diagonal(a, b, LEN_A, LEN_B, km, &yh, &node)
-            fp_int[km] = yh
-            fp_prevnode[km] = node
-
-        # point on the diagonal that leads to the sink
-        if yv < yh:
-            y = fp_int[delta + 1]
-            node = fp_prevnode[delta + 1]
-        else:
-            y = fp_int[delta - 1]
-            node = fp_prevnode[delta - 1]
-            y += 1
-
-        handle_diagonal(a, b, LEN_A, LEN_B, delta, &y, &node)
-
-        fp_int[delta] = y
-        fp_prevnode[delta] = node
-
-        if y >= LEN_B:
-            lastsnake = node
-            break
+            if y >= LEN_B:
+                lastsnake = node
+                break
 
     newsnake = []
     cdef long snake_x, snake_y, snake_snake
