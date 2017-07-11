@@ -181,14 +181,20 @@ cdef find_snakes(
     newsnake = []
     cdef long snake_x, snake_y, snake_snake
 
+    # FIXME: There has to be a better way to do this reconstruction
     while lastsnake != NULL:
+        # Cython doesn't like me trying "fancy" unpacking here
         snake_x = lastsnake.x
         snake_y = lastsnake.y
         snake_snake = lastsnake.snake
         lastsnake = lastsnake.lastsnake
         newsnake.append((snake_x, snake_y, snake_snake))
 
-    return None
+    finalsnake = None
+    for snake_node in newsnake[::-1]:
+        finalsnake = (finalsnake, *snake_node)
+
+    return finalsnake
 
 
 class MyersSequenceMatcher(difflib.SequenceMatcher):
