@@ -74,6 +74,10 @@ cdef struct Node:
     long y
     long snake
 
+cdef struct FreeList:
+    Node* node
+    FreeList *next
+
 
 @boundscheck(False)
 cdef void handle_diagonal(
@@ -83,11 +87,13 @@ cdef void handle_diagonal(
         const int LEN_B,
         const int km,
         long *yv,
-        Node **node) nogil:
+        Node **node,
+        FreeList **free_list) nogil:
 
     cdef long middle = LEN_A + 1
     cdef long x, snake
     cdef Node* newnode
+    cdef FreeList* new_free_list
 
     x = yv[0] - km + middle
     if x < LEN_A and yv[0] < LEN_B and a[x] == b[yv[0]]:
@@ -107,6 +113,11 @@ cdef void handle_diagonal(
         newnode.y = yv[0] - snake
         newnode.snake = snake
         node[0] = newnode
+
+        new_free_list = <FreeList*>malloc(sizeof(FreeList))
+        new_free_list.node = newnode
+        new_free_list.next = free_list[0]
+        free_list[0] = new_free_list
 
 
 @boundscheck(False)
@@ -128,6 +139,7 @@ cdef find_snakes(
     cdef Node** fp_prevnode = <Node**>calloc(max_len, sizeof(Node*))
     cdef Node* node
     cdef Node* lastsnake = NULL
+    cdef FreeList* free_list = NULL
 
     p = -1
     with nogil:
@@ -143,7 +155,7 @@ cdef find_snakes(
                 else:
                     yv += 1
 
-                handle_diagonal(a, b, LEN_A, LEN_B, km, &yv, &node)
+                handle_diagonal(a, b, LEN_A, LEN_B, km, &yv, &node, &free_list)
                 fp_int[km] = yv
                 fp_prevnode[km] = node
 
@@ -156,7 +168,7 @@ cdef find_snakes(
                     node = fp_prevnode[km - 1]
                     yh += 1
 
-                handle_diagonal(a, b, LEN_A, LEN_B, km, &yh, &node)
+                handle_diagonal(a, b, LEN_A, LEN_B, km, &yh, &node, &free_list)
                 fp_int[km] = yh
                 fp_prevnode[km] = node
 
@@ -169,7 +181,7 @@ cdef find_snakes(
                 node = fp_prevnode[delta - 1]
                 y += 1
 
-            handle_diagonal(a, b, LEN_A, LEN_B, delta, &y, &node)
+            handle_diagonal(a, b, LEN_A, LEN_B, delta, &y, &node, &free_list)
 
             fp_int[delta] = y
             fp_prevnode[delta] = node
@@ -193,6 +205,13 @@ cdef find_snakes(
     finalsnake = None
     for snake_node in newsnake[::-1]:
         finalsnake = (finalsnake, *snake_node)
+
+    while free_list != NULL:
+        next_item = free_list.next
+        free(free_list.node)
+        free(free_list)
+        free_list = next_item
+    free(fp_prevnode)
 
     return finalsnake
 
